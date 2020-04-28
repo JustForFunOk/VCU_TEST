@@ -12,3 +12,7 @@ LIB: `HAL`+`LL`
 
 ## Pinout Configuration
 
+|Pin name|Pin Function| Used to|
+|:--:|:--:|:--:|
+|PB0|TIM3_CH3|PWM output|
+|PB1|TIM3_CH4|PWM output|
