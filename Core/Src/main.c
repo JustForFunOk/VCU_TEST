@@ -41,6 +41,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
@@ -63,7 +64,10 @@ static void testUartPrint(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+static uint8_t is_first_captured = 1;
+static uint64_t count_number;
+static uint16_t IC_Value1, IC_Value2;
+static uint64_t period_elapsed_cnt;
 /* USER CODE END 0 */
 
 /**
@@ -102,6 +106,9 @@ int main(void)
   // PWM Output
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // TIM3 Channel3
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); // TIM3 Channel4
+  // PWM input capture
+  __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE); // enable overflow interrupt to get the count of overflow
+  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1); // TIM2 Channel1
   /* USER CODE END 2 */
  
  
@@ -154,6 +161,64 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_IC_InitTypeDef sConfigIC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 71;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 0xFFFF;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_IC_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+  sConfigIC.ICFilter = 8;
+  if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
 }
 
 /**
@@ -277,8 +342,8 @@ static void MX_GPIO_Init(void)
 {
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
 }
 
@@ -302,6 +367,34 @@ static void testUartPrint(void)
 //	HAL_UART_Transmit(&huart1, "hello world!", 13, 10);  // block mode
 	HAL_UART_Transmit_DMA(&huart1, "hello world!", 13);  // DMA mode
 	HAL_Delay(1000);
+}
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)  // rising trigger
+	{
+		if (is_first_captured)  // is the first value captured ?
+		{
+			IC_Value1 = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1);  // capture the first value
+			is_first_captured = 0;  // set the first value captured as true
+			period_elapsed_cnt = 0;
+		}
+		else  // if the first is captured
+		{
+			IC_Value2 = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1);  // capture second value
+			count_number = (htim->Init.Period +1 ) * period_elapsed_cnt + IC_Value2 - IC_Value1;
+			is_first_captured = 1;  // reset the first captured
+		}
+	}
+}
+
+// override timer overflow callback
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance == TIM2)  // rising trigger
+	{
+		++period_elapsed_cnt;
+	}
 }
 /* USER CODE END 4 */
 
