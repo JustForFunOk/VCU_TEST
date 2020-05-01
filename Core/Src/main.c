@@ -68,6 +68,7 @@ static uint8_t is_first_captured = 1;
 static uint64_t count_number;
 static uint16_t IC_Value1, IC_Value2;
 static uint64_t period_elapsed_cnt;
+//static uint64_t overflow = 0;
 /* USER CODE END 0 */
 
 /**
@@ -107,7 +108,9 @@ int main(void)
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // TIM3 Channel3
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); // TIM3 Channel4
   // PWM input capture
-  __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE); // enable overflow interrupt to get the count of overflow
+  // enable overflow interrupt to get the count of overflow
+  HAL_TIM_Base_Start_IT(&htim2); // Method1
+//  __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE); // Method2
   HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1); // TIM2 Channel1
   /* USER CODE END 2 */
  
@@ -375,9 +378,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 	{
 		if (is_first_captured)  // is the first value captured ?
 		{
+			period_elapsed_cnt = 0;
 			IC_Value1 = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1);  // capture the first value
 			is_first_captured = 0;  // set the first value captured as true
-			period_elapsed_cnt = 0;
 		}
 		else  // if the first is captured
 		{
@@ -393,6 +396,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM2)  // rising trigger
 	{
+//		overflow = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1); // wrong method
+		// TODO: should get current counter
 		++period_elapsed_cnt;
 	}
 }
