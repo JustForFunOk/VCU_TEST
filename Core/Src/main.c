@@ -61,14 +61,16 @@ static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 static void testPwmOutput(void);
 static void testUartPrint(void);
+void printLog(char*);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 static uint8_t is_first_captured = 1;
-static uint64_t count_number;
+static uint64_t count_number;  // do not watch count_number in IDE, print the variable to UART
 static uint16_t IC_Value1, IC_Value2;
 static uint64_t period_elapsed_cnt;
+static char print_log[10];
 //static uint64_t overflow = 0;
 /* USER CODE END 0 */
 
@@ -122,8 +124,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  testPwmOutput();
+	  testPwmOutput();
 //	  testUartPrint();
+
+	sprintf(print_log, "C=%d \n", count_number);
+	printLog(print_log);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -376,6 +381,7 @@ static void testUartPrint(void)
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
+	// PWM period measurement
 	if(htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)  // rising trigger
 	{
 		if (is_first_captured)  // is the first value captured ?
@@ -402,6 +408,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		// TODO: should get current counter
 		++period_elapsed_cnt;
 	}
+}
+
+void printLog(char* log)
+{
+	HAL_UART_Transmit_DMA(&huart1, log, 10);
 }
 /* USER CODE END 4 */
 
