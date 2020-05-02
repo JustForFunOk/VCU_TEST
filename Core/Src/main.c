@@ -43,6 +43,9 @@
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim3;
 
+UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_tx;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -50,9 +53,12 @@ TIM_HandleTypeDef htim3;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void testPwmOutput(void);
+static void testUartPrint(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -89,7 +95,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM3_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   // PWM Output
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // TIM3 Channel3
@@ -102,17 +110,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+//	  testPwmOutput();
+	  testUartPrint();
     /* USER CODE END WHILE */
-	// test change PWM duty cycle
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 100); // the value is between 100 and 200
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 200);
-	HAL_Delay(1000);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 150);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 150);
-	HAL_Delay(1000);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 200);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 100);
-	HAL_Delay(1000);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -219,6 +220,55 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/** 
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void) 
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -233,7 +283,26 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void testPwmOutput(void)
+{
+	// test change PWM duty cycle
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 100); // the value is between 100 and 200
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 200);
+	HAL_Delay(1000);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 150);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 150);
+	HAL_Delay(1000);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 200);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 100);
+	HAL_Delay(1000);
+}
 
+static void testUartPrint(void)
+{
+//	HAL_UART_Transmit(&huart1, "hello world!", 13, 10);  // block mode
+	HAL_UART_Transmit_DMA(&huart1, "hello world!", 13);  // DMA mode
+	HAL_Delay(1000);
+}
 /* USER CODE END 4 */
 
 /**
