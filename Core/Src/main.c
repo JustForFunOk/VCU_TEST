@@ -56,6 +56,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM2_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 static void testPwmOutput(void);
@@ -102,6 +103,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_TIM3_Init();
+  MX_TIM2_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   // PWM Output
@@ -121,7 +123,7 @@ int main(void)
   while (1)
   {
 //	  testPwmOutput();
-	  testUartPrint();
+//	  testUartPrint();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
