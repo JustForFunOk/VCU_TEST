@@ -115,7 +115,7 @@ int main(void)
   // enable overflow interrupt to get the count of overflow
   HAL_TIM_Base_Start_IT(&htim2); // Method1
 //  __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE); // Method2
-  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1); // TIM2 Channel1
+  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_3); // TIM2 Channel3
   /* USER CODE END 2 */
  
  
@@ -221,7 +221,7 @@ static void MX_TIM2_Init(void)
   sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
   sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
   sConfigIC.ICFilter = 8;
-  if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
+  if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
@@ -382,17 +382,17 @@ static void testUartPrint(void)
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
 	// PWM period measurement
-	if(htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)  // rising trigger
+	if(htim->Instance == TIM2 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3)  // rising trigger
 	{
 		if (is_first_captured)  // is the first value captured ?
 		{
 			period_elapsed_cnt = 0;
-			IC_Value1 = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1);  // capture the first value
+			IC_Value1 = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_3);  // capture the first value
 			is_first_captured = 0;  // set the first value captured as true
 		}
 		else  // if the first is captured
 		{
-			IC_Value2 = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1);  // capture second value
+			IC_Value2 = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_3);  // capture second value
 			count_number = (htim->Init.Period +1 ) * period_elapsed_cnt + IC_Value2 - IC_Value1;
 			is_first_captured = 1;  // reset the first captured
 		}
@@ -404,7 +404,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM2)  // rising trigger
 	{
-//		overflow = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_1); // wrong method
+//		overflow = HAL_TIM_ReadCapturedValue(&htim2, TIM_CHANNEL_3); // wrong method
 		// TODO: should get current counter
 		++period_elapsed_cnt;
 	}
