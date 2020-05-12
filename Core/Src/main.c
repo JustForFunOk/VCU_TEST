@@ -33,7 +33,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MPU9250_IIC_ADDRESS 0x68
+#define MPU9250_IIC_ADDRESS 0xD0  //0x68 // FUCK HAL
+#define MPU9250_WHO_AM_I    0x75
+
+#define BMP280_ADDRESS      0xEC
+#define BMP280_CHIPID       0xD0
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,6 +47,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
+DMA_HandleTypeDef hdma_i2c1_rx;
+DMA_HandleTypeDef hdma_i2c1_tx;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
@@ -68,6 +74,7 @@ static void MX_USART1_UART_Init(void);
 static void testPwmOutput(void);
 static void testUartPrint(void);
 static void testEnconder(void);
+static void testIIC(void);
 void printLog(char*);
 /* USER CODE END PFP */
 
@@ -79,6 +86,8 @@ static uint16_t IC_Value1, IC_Value2;
 static uint64_t period_elapsed_cnt;
 static char print_log[10];
 static uint16_t encoder_cnt;
+static char mpu9250data[18]={0};
+
 //static uint64_t overflow = 0;
 /* USER CODE END 0 */
 
@@ -128,6 +137,8 @@ int main(void)
   HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_3); // TIM2 Channel3
   // Encoder
   HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
+
+
   /* USER CODE END 2 */
  
  
@@ -138,7 +149,8 @@ int main(void)
   {
 //	  testPwmOutput();
 //	  testUartPrint();
-	  testEnconder();
+//	  testEnconder();
+	  testIIC();
 
 //	sprintf(print_log, "C=%d \n", count_number);
 //	printLog(print_log);
@@ -437,6 +449,12 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel4_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+  /* DMA1_Channel6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
+  /* DMA1_Channel7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel7_IRQn);
 
 }
 
@@ -487,6 +505,26 @@ static void testEnconder(void)
 	// TODO: add CNT overflow and underflow logic  0-65536
 	// TODO: the relationship between rotation direction and CNT change direction
 	// TODO: calculate rotation speed using this method
+}
+
+static void testIIC(void)
+{
+	uint8_t check;
+	// polling mode test well
+//	uint8_t status = HAL_I2C_Mem_Read(&hi2c1, MPU9250_IIC_ADDRESS, MPU9250_WHO_AM_I, 1, &check, 1, 1000); // MPU9250
+//	uint8_t status = HAL_I2C_Mem_Read(&hi2c1, BMP280_ADDRESS, BMP280_CHIPID, 1, &check, 1, 1000);  // BMP280
+	// interrupt mode
+	// DMA mode ATTENTION: both TX and RX DMA channel need open
+	uint8_t status = HAL_I2C_Mem_Read_DMA(&hi2c1, BMP280_ADDRESS, BMP280_CHIPID, 1, &check, 1); // return 0x58
+	if(HAL_OK == status)
+	{
+		HAL_UART_Transmit_DMA(&huart1, &check, 1);
+	}
+	else
+	{
+		HAL_UART_Transmit_DMA(&huart1, &status, 1);
+	}
+	HAL_Delay(1000);
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
